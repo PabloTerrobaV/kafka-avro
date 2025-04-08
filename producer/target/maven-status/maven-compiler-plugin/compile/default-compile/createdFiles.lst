@@ -1,0 +1,8 @@
+com\example\kafka\producer\App.class
+com\example\kafka\OrderStatus\OrderStatus.class
+com\example\kafka\PaymentMethod\PaymentMethod.class
+com\example\kafka\controllers\SchemaStatusController.class
+com\example\kafka\producer\OrderProducer$1.class
+com\example\kafka\Order$Builder.class
+com\example\kafka\Order.class
+com\example\kafka\producer\OrderProducer.class
