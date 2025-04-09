@@ -70,6 +70,11 @@ def comparar_esquemas(esquema_anterior, esquema_nuevo):
         for campo in campos_modificados:
             print(f"  ~ {campo['nombre']}: {campo['tipo_anterior']} → {campo['tipo_nuevo']}")
 
+    total_cambios = len(campos_añadidos) + len(campos_eliminados) + len(campos_modificados)
+    if total_cambios == 0:
+        print("✅ Los esquemas son idénticos o compatibles sin cambios.")
+
+
     # Resumen
     print("\n=== RESUMEN ===")
     print(f"Campos añadidos: {len(campos_añadidos)}")
