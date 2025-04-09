@@ -90,6 +90,7 @@ if __name__ == "__main__":
         esquema_nuevo = cargar_esquema(esquema_nuevo_file)
 
         comparar_esquemas(esquema_anterior, esquema_nuevo)
+        sys.exit(0)  # Añade este código de salida explícito
     except Exception as e:
         print(f"Error: {e}")
         sys.exit(1)
