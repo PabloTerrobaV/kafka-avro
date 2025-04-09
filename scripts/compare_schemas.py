@@ -92,5 +92,6 @@ if __name__ == "__main__":
         comparar_esquemas(esquema_anterior, esquema_nuevo)
         sys.exit(0)  # Añade este código de salida explícito
     except Exception as e:
-        print(f"Error: {e}")
+        # print(f"Error: {e}")
+        print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
