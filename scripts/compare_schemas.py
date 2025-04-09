@@ -20,6 +20,7 @@ def cargar_esquema(archivo):
         except Exception as e:
             raise ValueError(f"Error al parsear '{archivo}': {e}")
 
+
 def comparar_esquemas(esquema_anterior, esquema_nuevo):
     campos_anteriores = {campo.name: campo for campo in esquema_anterior.fields}
     campos_nuevos = {campo.name: campo for campo in esquema_nuevo.fields}
