@@ -4,7 +4,7 @@ pipeline {
     environment {
         SCHEMA_REGISTRY_URL = 'http://localhost:8081'
         SUBJECT_NAME = 'orders-value'
-        GITHUB_REPO_URL = 'https://github.com/PabloTerrobaV/kafka-avro.git' // Reemplazar con tu repo real
+        GITHUB_REPO_URL = 'https://github.com/PabloTerrobaV/kafka-avro.git'
         GITHUB_BRANCH = 'main'
         SCHEMA_PATH = 'common/src/main/avro/Order.avsc'
     }
@@ -38,7 +38,12 @@ pipeline {
         stage('Comparar esquemas y detectar cambios') {
             steps {
                 echo 'Comparando esquemas y detectando cambios...'
-                sh 'python3 scripts/compare_schemas.py old_schema.avsc new_schema.avsc > schema_diff.txt'
+                sh '''
+                python3 scripts/compare_schemas.py old_schema.avsc new_schema.avsc > schema_diff.txt || {
+                    echo "Error al comparar los esquemas"
+                    exit 1
+                }
+                '''
                 script {
                     def changes = readFile('schema_diff.txt')
                     echo "Cambios detectados:\n${changes}"
