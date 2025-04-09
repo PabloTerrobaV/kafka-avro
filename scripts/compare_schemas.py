@@ -1,11 +1,24 @@
 #!/usr/bin/env python3
 import json
 import sys
+import os
 from avro.schema import parse
 
+# def cargar_esquema(archivo):
+   #  with open(archivo, 'r') as f:
+       # return parse(f.read())
+
 def cargar_esquema(archivo):
+    if not os.path.exists(archivo):
+        raise FileNotFoundError(f"El archivo '{archivo}' no existe.")
     with open(archivo, 'r') as f:
-        return parse(f.read())
+        contenido = f.read().strip()
+        if not contenido:
+            raise ValueError(f"El archivo '{archivo}' está vacío.")
+        try:
+            return parse(contenido)
+        except Exception as e:
+            raise ValueError(f"Error al parsear '{archivo}': {e}")
 
 def comparar_esquemas(esquema_anterior, esquema_nuevo):
     campos_anteriores = {campo.name: campo for campo in esquema_anterior.fields}
