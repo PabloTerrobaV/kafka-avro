@@ -5,6 +5,7 @@
   "fields": [
     {"name": "id", "type": "string"},
     {"name": "customer_name", "type": "string"},
+    {"name":  "email", "type":  "string"},
     {"name": "total_price", "type": "float"},
     {"name": "product", "type": "string", "default": ""},
     {"name": "quantity", "type": "int", "default": 1},
