@@ -132,7 +132,7 @@ if __name__ == "__main__":
 
         # Obtenemos estos valores del entorno (configurados en el Jenkins)
         schema_registry_url = "http://schema-registry:8081"
-        subject_name = "cliente-value"
+        subject_name = "orders-value"
 
         compatibilidad = obtener_compatibilidad(schema_registry_url, subject_name)
         cambios = analizar_esquemas(esquema_anterior, esquema_nuevo)
