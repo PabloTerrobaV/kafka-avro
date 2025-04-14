@@ -97,6 +97,24 @@ pipeline {
             }
         }
 
+        // ******* Stage de validación de compatibilidad de los esquemas, a través de script de Python *******
+        stage('Validar compatibilidad del esquema') {
+            steps {
+                echo 'Validando compatibilidad del esquema...'
+                // Se ejecuta el script Python de validación que:
+                // 1. Consulta la configuración de compatibilidad (usando el Schema Registry).
+                // 2. Analiza los cambios entre el esquema anterior y el nuevo.
+                // 3. Valida la compatibilidad y, en caso de incompatibilidad, fuerza la salida con exit code 1.
+                sh '''
+                python3 scripts/validate_compatibility.py old_schema.avsc new_schema.avsc || {
+                    echo "[ERROR] La validación de compatibilidad ha fallado"
+                    exit 1
+                }
+                '''
+            }
+        }
+
+        // ******* Nuevo stage: Registro de la nueva versión en Schema Registry *******
         stage('Registrar esquema en Schema Registry') {
             steps {
                 echo 'Registrando nuevo esquema en Schema Registry...'
