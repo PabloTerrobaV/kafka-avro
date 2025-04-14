@@ -10,6 +10,7 @@
     {"name": "total_price", "type": "float"},
     {"name": "product", "type": "string", "default": ""},
     {"name": "quantity", "type": "int", "default": 1},
+    {"name": "is_paid", "type": "boolean", "default": true},
     {"name":  "is_gift", "type":  "boolean", "default": false},
     {"name":  "currency", "type":  "string", "default": "USD"},
     {"name": "payment_method", "type": {"type": "enum", "name": "PaymentMethod", "namespace": "com.example.kafka.PaymentMethod",
