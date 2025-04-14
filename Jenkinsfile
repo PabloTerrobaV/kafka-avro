@@ -114,6 +114,17 @@ pipeline {
             }
         }
 
+        // ******* Nuevo stage: Añadir fecha y hora en el nuevo esquema para solucionar el problema de las duplicidades *******
+        stage('Forzar modificación del esquema (opcional)') {
+            steps {
+                echo 'Ajustando el nuevo esquema para forzar el registro de una nueva versión...'
+                // Actualiza o añade un campo "doc" con un valor único (por ejemplo, un timestamp)
+                sh "sed -i 's/\\(\"namespace\" *: *\"com.example.kafka\"\\)/\\1, \"doc\": \"Actualizado el $(date +%s)\"/' new_schema.avsc"
+                // Muestra el contenido modificado para verificar el cambio
+                sh "cat new_schema.avsc"
+            }
+        }
+
         // ******* Nuevo stage: Registro de la nueva versión en Schema Registry *******
         stage('Registrar esquema en Schema Registry') {
             steps {
