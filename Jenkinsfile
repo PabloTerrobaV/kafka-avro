@@ -132,10 +132,9 @@ pipeline {
                 echo 'Registrando nuevo esquema en Schema Registry...'
                 script {
                     def response = sh(
-                        script: """
-                        echo "[DEBUG] Empaquetando new_schema.avsc para Schema Registry..."
-                        ESCAPED_SCHEMA=\$(cat new_schema.avsc | jq -Rs .)
-                        echo "{\\"schema\\": \$ESCAPED_SCHEMA}" > payload.json
+                        script: '''
+                        echo "[DEBUG] Generando payload JSON con jq..."
+                        jq -Rs '{schema: .}' new_schema.avsc > payload.json
 
                         echo "[DEBUG] Payload de registro:"
                         cat payload.json
@@ -144,7 +143,7 @@ pipeline {
                         curl -s -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" \\
                              --data @payload.json \\
                              ${SCHEMA_REGISTRY_URL}/subjects/${SUBJECT_NAME}/versions
-                        """,
+                        ''',
                         returnStdout: true
                     ).trim()
 
@@ -159,6 +158,7 @@ pipeline {
                 }
             }
         }
+
 
         // ******** Nuevo Stage: Obtener compatibilidad ********
         stage('Obtener compatibilidad') {
