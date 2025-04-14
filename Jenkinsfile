@@ -119,7 +119,7 @@ pipeline {
             steps {
                 echo 'Ajustando el nuevo esquema para forzar el registro de una nueva versión...'
                 // Actualiza o añade un campo "doc" con un valor único (por ejemplo, un timestamp)
-                sh "sed -i 's/\\(\"namespace\" *: *\"com.example.kafka\"\\)/\\1, \"doc\": \"Actualizado el $(date +%s)\"/' new_schema.avsc"
+                sh "sed -i 's/\\(\"namespace\" *: *\"com.example.kafka\"\\)/\\1, \"doc\": \"Actualizado el \\$(date +%s)\"/' new_schema.avsc"
                 // Muestra el contenido modificado para verificar el cambio
                 sh "cat new_schema.avsc"
             }
