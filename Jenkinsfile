@@ -97,18 +97,29 @@ pipeline {
             }
         }
 
-        // ******** Nuevo Stage: Registrar el esquema en Schema Registry ********
         stage('Registrar esquema en Schema Registry') {
             steps {
                 echo 'Registrando nuevo esquema en Schema Registry...'
-                sh """
-                if ! curl -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" \
-                    --data @new_schema.avsc \
-                    ${SCHEMA_REGISTRY_URL}/subjects/${SUBJECT_NAME}/versions; then
-                    echo "Error al registrar el esquema en Schema Registry"
-                    exit 1
-                fi
-                """
+                script {
+                    def response = sh(
+                        script: """
+                        curl -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" \
+                             --data @new_schema.avsc \
+                             ${SCHEMA_REGISTRY_URL}/subjects/${SUBJECT_NAME}/versions
+                        """,
+                        returnStdout: true
+                    ).trim()
+
+                    echo "Respuesta del registro: ${response}"
+
+                    // Aquí puedes parsear la respuesta JSON y extraer la versión
+                    def newVersion = readJSON text: response
+                    echo "Esquema registrado (o ya existente) en la versión: ${newVersion.version}"
+
+                    // Si la versión que esperabas es diferente a la que obtuviste, tomar una acción
+                    // Por ejemplo: si esperabas un incremento, pero se mantuvo igual, puedes notificar al equipo.
+                    // O bien, puedes tratarlo como un caso válido que no requiere actualización.
+                }
             }
         }
 
@@ -144,10 +155,10 @@ pipeline {
                 echo 'Verificando que el grupo prioritario se haya actualizado...'
                 script {
                     // Define la IP del host a la que los servicios están expuestos (debe ser accesible desde Jenkins)
-                    def hostIP = "192.168.1.130"  // Ajustar según corresponda
+                    def hostIP = "192.168.1.147"  // Ajustar según corresponda
                     // Define los puertos de los servicios según el grupo. Aquí se ejemplifica:
-                    def consumerPorts = [8090]   // Ejemplo: consumidores
-                    def producerPorts = [8091]   // Ejemplo: productores
+                    def producerPorts = [8090]   // Ejemplo: productores
+                    def consumerPorts = [8091]   // Ejemplo: consumidores
 
                     // Obtener de nuevo la compatibilidad para decidir a quién verificar
                     def compatibility = sh(
