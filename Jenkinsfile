@@ -119,7 +119,7 @@ pipeline {
             steps {
                 echo 'Ajustando el nuevo esquema para forzar el registro de una nueva versión...'
                 sh '''
-                    TIMESTAMP=$(date +%s)
+                    TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
                     sed -i "s/\\"namespace\\" *: *\\"com.example.kafka\\"/\\"namespace\\": \\"com.example.kafka\\", \\"doc\\": \\"Actualizado el $TIMESTAMP\\"/" new_schema.avsc
                     echo "Contenido de new_schema.avsc modificado:"
                     cat new_schema.avsc
