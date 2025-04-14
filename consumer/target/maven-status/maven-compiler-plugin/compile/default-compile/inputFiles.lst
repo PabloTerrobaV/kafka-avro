@@ -1,6 +1,6 @@
-C:\Users\Telecable\IdeaProjects\kafka-avro\consumer\src\main\java\com\example\kafka\consumer\App.java
-C:\Users\Telecable\IdeaProjects\kafka-avro\consumer\src\main\java\com\example\kafka\consumer\OrderConsumer.java
-C:\Users\Telecable\IdeaProjects\kafka-avro\consumer\src\main\java\com\example\kafka\controllers\SchemaStatusController.java
-C:\Users\Telecable\IdeaProjects\kafka-avro\consumer\src\main\java\com\example\kafka\Order.java
-C:\Users\Telecable\IdeaProjects\kafka-avro\consumer\src\main\java\com\example\kafka\OrderStatus\OrderStatus.java
-C:\Users\Telecable\IdeaProjects\kafka-avro\consumer\src\main\java\com\example\kafka\PaymentMethod\PaymentMethod.java
+C:\Users\Telecable\IdeaProjects\kafka-avro-repo\consumer\src\main\java\com\example\kafka\consumer\App.java
+C:\Users\Telecable\IdeaProjects\kafka-avro-repo\consumer\src\main\java\com\example\kafka\consumer\OrderConsumer.java
+C:\Users\Telecable\IdeaProjects\kafka-avro-repo\consumer\src\main\java\com\example\kafka\controllers\SchemaStatusController.java
+C:\Users\Telecable\IdeaProjects\kafka-avro-repo\consumer\src\main\java\com\example\kafka\Order.java
+C:\Users\Telecable\IdeaProjects\kafka-avro-repo\consumer\src\main\java\com\example\kafka\OrderStatus\OrderStatus.java
+C:\Users\Telecable\IdeaProjects\kafka-avro-repo\consumer\src\main\java\com\example\kafka\PaymentMethod\PaymentMethod.java

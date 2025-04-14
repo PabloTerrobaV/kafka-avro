@@ -143,7 +143,8 @@ public class OrderProducer {
         return new Order(
                 (String) fieldValues.get("id"),
                 (String) fieldValues.get("customer_name"),
-                // (String) fieldValues.get("email"),
+                (String) fieldValues.get("nationality"),
+                (String) fieldValues.get("email"),
                 (Float) fieldValues.get("total_price"),
                 (String) fieldValues.get("product"),
                 (Integer) fieldValues.get("quantity"),
