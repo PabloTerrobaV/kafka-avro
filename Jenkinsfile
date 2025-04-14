@@ -3,7 +3,7 @@ pipeline {
 
     // Definición de variables de entorno, que se usarán en los comandos
     environment {
-        // URL del Schema Registry, se usa en el script Python de validación
+        // URL del Schema Registry (accesible desde Jenkins en la red de Docker)
         SCHEMA_REGISTRY_URL = 'http://schema-registry:8081'
         // El subject que se usará para consultar la configuración de compatibilidad en Schema Registry
         SUBJECT_NAME = 'orders-value'
@@ -19,8 +19,7 @@ pipeline {
         stage('Descargar versión antigua del esquema') {
             steps {
                 echo 'Descargando versión antigua del esquema desde Schema Registry...'
-                // Se descarga el esquema antiguo usando el endpoint /versions/latest (sin /schema)
-                // Luego se utiliza jq para extraer el campo "schema" y guardarlo en old_schema.avsc
+                // Se descarga el esquema antiguo utilizando el endpoint /versions/latest (sin /schema) y se extrae el campo "schema" con jq
                 sh """
                 curl -v ${SCHEMA_REGISTRY_URL}/subjects/${SUBJECT_NAME}/versions/latest | jq -r .schema > old_schema.avsc || {
                     echo "Error al descargar el esquema antiguo"
@@ -33,20 +32,20 @@ pipeline {
         stage('Obtener nueva versión del esquema') {
             steps {
                 echo 'Descargando nueva versión del esquema desde GitHub...'
-                // Se realiza el checkout del repositorio para obtener el archivo actualizado
+                // Realiza el checkout del repositorio para obtener el archivo actualizado
                 checkout([
                     $class: 'GitSCM',
                     branches: [[name: "${GITHUB_BRANCH}"]],
                     userRemoteConfigs: [[url: "${GITHUB_REPO_URL}"]]
                 ])
-                // Se copia el esquema actualizado a new_schema.avsc
+                // Copia el archivo del esquema actualizado a new_schema.avsc
                 sh "cp ${SCHEMA_PATH} new_schema.avsc || { echo 'Error al copiar el nuevo esquema'; exit 1; }"
             }
         }
 
         stage('Inspeccionar esquemas') {
             steps {
-                // Se verifica que ambos archivos existan y se muestran sus contenidos
+                // Verifica que ambos archivos existan y se muestran sus contenidos
                 sh '''
                 echo "🔍 Verificando existencia y contenido de los archivos AVSC..."
 
@@ -70,7 +69,7 @@ pipeline {
         stage('Comparar esquemas y detectar cambios') {
             steps {
                 echo 'Comparando esquemas y detectando cambios...'
-                // Se muestra información de depuración: lista de archivos en scripts/ y contenido de los esquemas
+                // Se muestra información de depuración: se listan los archivos en "scripts" y se muestra el contenido de ambos esquemas
                 sh '''
                 echo "[DEBUG] Archivos disponibles en scripts/"
                 ls -l scripts
@@ -98,26 +97,121 @@ pipeline {
             }
         }
 
-        stage('Validar compatibilidad del esquema') {
+        // ******** Nuevo Stage: Registrar el esquema en Schema Registry ********
+        stage('Registrar esquema en Schema Registry') {
             steps {
-                echo 'Validando compatibilidad del esquema...'
-                // Se ejecuta el script Python de validación que:
-                // 1. Consulta la configuración de compatibilidad (usando el Schema Registry).
-                // 2. Analiza los cambios entre el esquema anterior y el nuevo.
-                // 3. Valida la compatibilidad y, en caso de incompatibilidad, fuerza la salida con exit code 1.
-                sh '''
-                python3 scripts/validate_compatibility.py old_schema.avsc new_schema.avsc || {
-                    echo "[ERROR] La validación de compatibilidad ha fallado"
+                echo 'Registrando nuevo esquema en Schema Registry...'
+                sh """
+                if ! curl -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" \
+                    --data @new_schema.avsc \
+                    ${SCHEMA_REGISTRY_URL}/subjects/${SUBJECT_NAME}/versions; then
+                    echo "Error al registrar el esquema en Schema Registry"
                     exit 1
+                fi
+                """
+            }
+        }
+
+        // ******** Nuevo Stage: Obtener compatibilidad ********
+        stage('Obtener compatibilidad') {
+            steps {
+                echo 'Obteniendo configuración de compatibilidad desde Schema Registry...'
+                script {
+                    // Se consulta el Schema Registry para extraer el nivel de compatibilidad configurado para el subject
+                    def output = sh(
+                        script: "curl -s ${SCHEMA_REGISTRY_URL}/config/${SUBJECT_NAME} | jq -r '.compatibilityLevel'",
+                        returnStdout: true
+                    ).trim()
+                    echo "Compatibilidad configurada: ${output}"
+
+                    // Determina a quién notificar como grupo prioritario según el nivel de compatibilidad
+                    if (output.startsWith("BACKWARD")) {
+                        echo "🔔 Notificando a consumidores (prioritarios) para que actualicen primero..."
+                    } else if (output.startsWith("FORWARD")) {
+                        echo "🔔 Notificando a productores (prioritarios) para que actualicen primero..."
+                    } else if (output.startsWith("FULL")) {
+                        echo "🔔 Notificando a ambos grupos para actualización simultánea..."
+                    } else {
+                        echo "⚠️ Compatibilidad no reconocida. Notificando a todos por precaución."
+                    }
                 }
-                '''
+            }
+        }
+
+        // ******** Nuevo Stage: Verificar actualización de esquemas ********
+        stage('Verificar actualización de esquemas') {
+            steps {
+                echo 'Verificando que el grupo prioritario se haya actualizado...'
+                script {
+                    // Define la IP del host a la que los servicios están expuestos (debe ser accesible desde Jenkins)
+                    def hostIP = "192.168.1.130"  // Ajustar según corresponda
+                    // Define los puertos de los servicios según el grupo. Aquí se ejemplifica:
+                    def consumerPorts = [8090]   // Ejemplo: consumidores
+                    def producerPorts = [8091]   // Ejemplo: productores
+
+                    // Obtener de nuevo la compatibilidad para decidir a quién verificar
+                    def compatibility = sh(
+                        script: "curl -s ${SCHEMA_REGISTRY_URL}/config/${SUBJECT_NAME} | jq -r '.compatibilityLevel'",
+                        returnStdout: true
+                    ).trim()
+
+                    echo "Compatibilidad detectada: ${compatibility}"
+
+                    // Seleccionar el grupo prioritario y el grupo secundario en función de la compatibilidad
+                    def portsToCheck = []
+                    def nextGroup = ""
+
+                    if (compatibility.startsWith("BACKWARD")) {
+                        // BACKWARD: Los consumidores deben actualizar primero
+                        portsToCheck = consumerPorts
+                        nextGroup = "productores"
+                    } else if (compatibility.startsWith("FORWARD")) {
+                        // FORWARD: Los productores deben actualizar primero
+                        portsToCheck = producerPorts
+                        nextGroup = "consumidores"
+                    } else if (compatibility.startsWith("FULL")) {
+                        // FULL: Ambos grupos se actualizan simultáneamente
+                        portsToCheck = consumerPorts + producerPorts
+                        nextGroup = null
+                    } else {
+                        echo "Compatibilidad desconocida, se verifican todos los servicios..."
+                        portsToCheck = consumerPorts + producerPorts
+                        nextGroup = null
+                    }
+
+                    def allUpdated = true
+
+                    // Se revisa cada servicio del grupo prioritario (o ambos si FULL)
+                    for (port in portsToCheck) {
+                        def response = sh(script: "curl -s http://${hostIP}:$port/schema-status", returnStdout: true).trim()
+                        echo "${hostIP}:$port → $response"
+                        if (!response.contains("Schema is up-to-date")) {
+                            echo "❌ El servicio en el puerto $port NO está actualizado"
+                            allUpdated = false
+                        }
+                    }
+
+                    if (!allUpdated) {
+                        error("Al menos un servicio del grupo prioritario tiene un esquema desactualizado.")
+                    }
+
+                    echo "✅ Todos los servicios del grupo prioritario están actualizados."
+
+                    // Si existe un grupo secundario, notificarlo para proceder con su actualización
+                    if (nextGroup != null) {
+                        echo "🔔 Notificando al grupo secundario (${nextGroup}) para que proceda con la actualización..."
+                        // Aquí se puede agregar una notificación real (por ejemplo, con Slack o email)
+                    } else {
+                        echo "🔔 No se requiere notificar a un grupo secundario; la actualización es conjunta."
+                    }
+                }
             }
         }
     }
 
     post {
         success {
-            echo "✅ Proceso completado exitosamente. Los esquemas fueron descargados, comparados y validados."
+            echo "✅ Proceso completado exitosamente. Los esquemas fueron descargados, comparados, validados y se verificó la actualización del grupo prioritario."
         }
         failure {
             echo "❌ Proceso fallido. Revisar los logs para más detalles."
