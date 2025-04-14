@@ -127,15 +127,22 @@ pipeline {
             }
         }
 
-        // ******* Nuevo stage: Registro de la nueva versión en Schema Registry *******
         stage('Registrar esquema en Schema Registry') {
             steps {
                 echo 'Registrando nuevo esquema en Schema Registry...'
                 script {
                     def response = sh(
                         script: """
-                        curl -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" \
-                             --data @new_schema.avsc \
+                        echo "[DEBUG] Empaquetando new_schema.avsc para Schema Registry..."
+                        ESCAPED_SCHEMA=\$(cat new_schema.avsc | jq -Rs .)
+                        echo "{\\"schema\\": \$ESCAPED_SCHEMA}" > payload.json
+
+                        echo "[DEBUG] Payload de registro:"
+                        cat payload.json
+
+                        echo "[DEBUG] Ejecutando registro con curl..."
+                        curl -s -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" \\
+                             --data @payload.json \\
                              ${SCHEMA_REGISTRY_URL}/subjects/${SUBJECT_NAME}/versions
                         """,
                         returnStdout: true
@@ -143,7 +150,6 @@ pipeline {
 
                     echo "Respuesta del registro: ${response}"
 
-                    // Aquí puedes parsear la respuesta JSON y extraer la versión
                     def newVersion = readJSON text: response
                     echo "Esquema registrado (o ya existente) en la versión: ${newVersion.version}"
 
