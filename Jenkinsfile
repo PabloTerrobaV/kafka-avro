@@ -118,10 +118,13 @@ pipeline {
         stage('Forzar modificación del esquema (opcional)') {
             steps {
                 echo 'Ajustando el nuevo esquema para forzar el registro de una nueva versión...'
-                // Actualiza o añade un campo "doc" con un valor único (por ejemplo, un timestamp)
-                sh "sed -i 's/\\(\"namespace\" *: *\"com.example.kafka\"\\)/\\1, \"doc\": \"Actualizado el \\$(date +%s)\"/' new_schema.avsc"
-                // Muestra el contenido modificado para verificar el cambio
-                sh "cat new_schema.avsc"
+                // Usamos triple comillas simples para evitar la interpolación de Groovy,
+                // de modo que el literal $(date +%s) se evalúa en la shell.
+                sh '''
+                    sed -i 's/\("namespace" *: *"com.example.kafka"\)/\1, "doc": "Actualizado el $(date +%s)"/' new_schema.avsc
+                    echo "Contenido de new_schema.avsc modificado:"
+                    cat new_schema.avsc
+                '''
             }
         }
 
