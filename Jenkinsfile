@@ -192,7 +192,7 @@ pipeline {
                 echo 'Verificando que el grupo prioritario se haya actualizado...'
                 script {
                     // Define la IP del host a la que los servicios están expuestos (debe ser accesible desde Jenkins)
-                    def hostIP = "192.168.1.147"  // Ajustar según corresponda
+                    def hostIP = "192.168.1.142"  // Ajustar según corresponda
                     // Define los puertos de los servicios según el grupo. Aquí se ejemplifica:
                     def producerPorts = [8090]   // Ejemplo: productores
                     def consumerPorts = [8091]   // Ejemplo: consumidores

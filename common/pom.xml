@@ -125,7 +125,7 @@
             </goals>
             <configuration>
               <sourceDirectory>${project.basedir}/src/main/avro</sourceDirectory>
-              <outputDirectory>${project.basedir}/target/generated-sources/avro</outputDirectory>
+              <outputDirectory>${project.basedir}/src/main/avro</outputDirectory>
             </configuration>
           </execution>
         </executions>
