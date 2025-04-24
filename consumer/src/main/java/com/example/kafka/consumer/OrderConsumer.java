@@ -30,6 +30,7 @@ public class OrderConsumer {
     public ConsumerFactory<String, Order> consumerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "http://localhost:9092");
+        // props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "http://host.docker.internal:9092");
         // props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "http://kafka:9092");
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "order-consumer-group");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);

@@ -35,6 +35,7 @@ public class OrderProducer {
     // Configuración de constantes para Kafka y Schema Registry
     private static final String TOPIC = "orders";
     private static final String BOOTSTRAP_SERVERS = "http://localhost:9092";
+    // private static final String BOOTSTRAP_SERVERS = "http://host.docker.internal:9092";
     // private static final String BOOTSTRAP_SERVERS = "http://kafka:9092";
     private static final String SCHEMA_REGISTRY_URL = "http://localhost:8081";
     // private static final String SCHEMA_REGISTRY_URL = "http://schema-registry:8081"; // Para utilizar las imágenes de Docker
