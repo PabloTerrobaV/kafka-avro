@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "name": "Order",
+  "name": "OrderPrueba",
   "namespace": "com",
   "fields": [
     {"name": "id", "type": "string"},
