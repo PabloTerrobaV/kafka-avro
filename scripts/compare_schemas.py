@@ -2,115 +2,162 @@
 import json
 import sys
 import os
-from avro.schema import parse
-
-# def cargar_esquema(archivo):
-   #  with open(archivo, 'r') as f:
-       # return parse(f.read())
+from avro.schema import parse, Schema
 
 def cargar_esquema(archivo):
     if not os.path.exists(archivo):
         raise FileNotFoundError(f"El archivo '{archivo}' no existe.")
+
     with open(archivo, 'r') as f:
         contenido = f.read().strip()
-        if not contenido:
-            raise ValueError(f"El archivo '{archivo}' está vacío.")
-        try:
-            return parse(contenido)
-        except Exception as e:
-            raise ValueError(f"Error al parsear '{archivo}': {e}")
 
+    if not contenido:
+        raise ValueError(f"El archivo '{archivo}' está vacío.")
 
-def comparar_esquemas(esquema_anterior, esquema_nuevo):
+    try:
+        return parse(contenido)
+    except Exception as e:
+        raise ValueError(f"Error al parsear '{archivo}': {e}")
+
+def comparar_metadatos(esquema1: Schema, esquema2: Schema):
+    metadatos = ['type', 'name', 'namespace', 'doc']
+    diferencias = {}
+
+    for attr in metadatos:
+        val1 = getattr(esquema1, attr, None)
+        val2 = getattr(esquema2, attr, None)
+
+        if val1 != val2:
+            diferencias[attr] = {
+                'anterior': val1,
+                'nuevo': val2
+            }
+
+    return diferencias
+
+def comparar_esquemas(esquema_anterior: Schema, esquema_nuevo: Schema):
+    # Comparar metadatos principales
+    diferencias_metadatos = comparar_metadatos(esquema_anterior, esquema_nuevo)
+
+    # Comparar campos
     campos_anteriores = {campo.name: campo for campo in esquema_anterior.fields}
     campos_nuevos = {campo.name: campo for campo in esquema_nuevo.fields}
 
-    campos_añadidos = []
-    campos_eliminados = []
-    campos_modificados = []
+    # Detectar cambios en campos
+    cambios = {
+        'metadatos': diferencias_metadatos,
+        'campos_añadidos': [],
+        'campos_eliminados': [],
+        'campos_modificados': []
+    }
 
-    # Detectar campos añadidos
+    # Campos añadidos
     for nombre in campos_nuevos:
         if nombre not in campos_anteriores:
             campo = campos_nuevos[nombre]
-            tiene_default = 'default' in campo.props
-            campos_añadidos.append({
-                'nombre': nombre,
-                'tipo': str(campo.type),
-                'tiene_default': tiene_default,
-                'default': campo.props.get('default', None) if tiene_default else None
-            })
+            cambios['campos_añadidos'].append(analizar_campo(campo))
 
-    # Detectar campos eliminados
+    # Campos eliminados
     for nombre in campos_anteriores:
         if nombre not in campos_nuevos:
             campo = campos_anteriores[nombre]
-            tiene_default = 'default' in campo.props
-            campos_eliminados.append({
-                'nombre': nombre,
-                'tipo': str(campo.type),
-                'tiene_default': tiene_default,
-                'default': campo.props.get('default', None) if tiene_default else None
-            })
+            cambios['campos_eliminados'].append(analizar_campo(campo))
 
-    # Detectar campos modificados
+    # Campos modificados
     for nombre in campos_anteriores:
-        if nombre in campos_nuevos and str(campos_anteriores[nombre].type) != str(campos_nuevos[nombre].type):
-            campos_modificados.append({
-                'nombre': nombre,
-                'tipo_anterior': str(campos_anteriores[nombre].type),
-                'tipo_nuevo': str(campos_nuevos[nombre].type),
-                'tiene_default_anterior': 'default' in campos_anteriores[nombre].props,
-                'tiene_default_nuevo': 'default' in campos_nuevos[nombre].props
-            })
+        if nombre in campos_nuevos:
+            campo_ant = campos_anteriores[nombre]
+            campo_nuevo = campos_nuevos[nombre]
 
-    # Imprimir resultados
-    print("=== CAMBIOS DETECTADOS ===")
+            if campo_ant != campo_nuevo:
+                cambios['campos_modificados'].append({
+                    'nombre': nombre,
+                    'detalles_anteriores': analizar_campo(campo_ant),
+                    'detalles_nuevos': analizar_campo(campo_nuevo)
+                })
 
-    if campos_añadidos:
-        print("\n🟢 CAMPOS AÑADIDOS:")
-        for campo in campos_añadidos:
-            info_default = f" (con valor por defecto: {campo['default']})" if campo['tiene_default'] else " (sin valor por defecto)"
-            print(f"  + {campo['nombre']} ({campo['tipo']}){info_default}")
+    return cambios
 
-    if campos_eliminados:
-        print("\n🔴 CAMPOS ELIMINADOS:")
-        for campo in campos_eliminados:
-            info_default = f" (con valor por defecto: {campo['default']})" if campo['tiene_default'] else " (sin valor por defecto)"
-            print(f"  - {campo['nombre']} ({campo['tipo']}){info_default}")
+def analizar_campo(campo):
+    return {
+        'nombre': campo.name,
+        'tipo': str(campo.type),
+        'doc': getattr(campo, 'doc', None),
+        'default': campo.get_default(),
+        'orden': campo.order if hasattr(campo, 'order') else None
+    }
 
-    if campos_modificados:
-        print("\n🟠 CAMPOS MODIFICADOS:")
-        for campo in campos_modificados:
-            print(f"  ~ {campo['nombre']}: {campo['tipo_anterior']} → {campo['tipo_nuevo']}")
+def generar_reporte(cambios):
+    reporte = []
 
-    total_cambios = len(campos_añadidos) + len(campos_eliminados) + len(campos_modificados)
-    if total_cambios == 0:
-        print("✅ Los esquemas son idénticos o compatibles sin cambios.")
+    # Metadatos
+    if cambios['metadatos']:
+        reporte.append("=== CAMBIOS EN METADATOS ===")
+        for attr, vals in cambios['metadatos'].items():
+            reporte.append(f"🔵 {attr.upper()}:")
+            reporte.append(f"  Anterior: {vals['anterior']}")
+            reporte.append(f"  Nuevo:    {vals['nuevo']}")
 
+    # Campos
+    if cambios['campos_añadidos']:
+        reporte.append("\n🟢 CAMPOS AÑADIDOS:")
+        for campo in cambios['campos_añadidos']:
+            reporte.append(formatear_campo(campo))
+
+    if cambios['campos_eliminados']:
+        reporte.append("\n🔴 CAMPOS ELIMINADOS:")
+        for campo in cambios['campos_eliminados']:
+            reporte.append(formatear_campo(campo))
+
+    if cambios['campos_modificados']:
+        reporte.append("\n🟠 CAMPOS MODIFICADOS:")
+        for cambio in cambios['campos_modificados']:
+            reporte.append(f"  ~ {cambio['nombre']}:")
+            reporte.append("    Anterior: " + formatear_campo(cambio['detalles_anteriores']))
+            reporte.append("    Nuevo:    " + formatear_campo(cambio['detalles_nuevos']))
 
     # Resumen
-    print("\n=== RESUMEN ===")
-    print(f"Campos añadidos: {len(campos_añadidos)}")
-    print(f"Campos eliminados: {len(campos_eliminados)}")
-    print(f"Campos modificados: {len(campos_modificados)}")
-    print(f"Total de cambios: {len(campos_añadidos) + len(campos_eliminados) + len(campos_modificados)}")
+    total_cambios = (len(cambios['metadatos']) +
+                     len(cambios['campos_añadidos']) +
+                     len(cambios['campos_eliminados']) +
+                     len(cambios['campos_modificados']))
+
+    reporte.append("\n=== RESUMEN ===")
+    reporte.append(f"Metadatos modificados: {len(cambios['metadatos'])}")
+    reporte.append(f"Campos añadidos: {len(cambios['campos_añadidos'])}")
+    reporte.append(f"Campos eliminados: {len(cambios['campos_eliminados'])}")
+    reporte.append(f"Campos modificados: {len(cambios['campos_modificados'])}")
+    reporte.append(f"Total de cambios: {total_cambios}")
+
+    return '\n'.join(reporte)
+
+def formatear_campo(campo):
+    detalles = []
+    if campo['doc']:
+        detalles.append(f"Doc: {campo['doc']}")
+    if campo['default'] is not None:
+        detalles.append(f"Default: {campo['default']}")
+    if campo['orden']:
+        detalles.append(f"Orden: {campo['orden']}")
+
+    return f"  {campo['nombre']} ({campo['tipo']})" + \
+        (" [" + ", ".join(detalles) + "]" if detalles else "")
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Uso: python compare_schemas.py <esquema_anterior.avsc> <esquema_nuevo.avsc>")
         sys.exit(1)
 
-    esquema_anterior_file = sys.argv[1]
-    esquema_nuevo_file = sys.argv[2]
-
     try:
-        esquema_anterior = cargar_esquema(esquema_anterior_file)
-        esquema_nuevo = cargar_esquema(esquema_nuevo_file)
+        esquema_anterior = cargar_esquema(sys.argv[1])
+        esquema_nuevo = cargar_esquema(sys.argv[2])
 
-        comparar_esquemas(esquema_anterior, esquema_nuevo)
-        sys.exit(0)  # Añade este código de salida explícito
+        cambios = comparar_esquemas(esquema_anterior, esquema_nuevo)
+        reporte = generar_reporte(cambios)
+
+        print(reporte)
+        sys.exit(0 if not any(cambios.values()) else 1)
+
     except Exception as e:
-        # print(f"Error: {e}")
-        print(f"Error: {e}", file=sys.stderr)
+        print(f"❌ Error: {e}", file=sys.stderr)
         sys.exit(1)
