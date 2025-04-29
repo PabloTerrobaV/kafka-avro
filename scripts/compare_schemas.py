@@ -105,8 +105,16 @@ def generar_reporte(cambios):
             reporte.append("    Nuevo:    " + formatear_campo(cambio['nuevo']))
 
     # Resumen
-    total = sum(len(v) for v in cambios['metadatos'].values()) + \
-            sum(len(v) for v in cambios['campos'].values())
+    # total = sum(len(v) for v in cambios['metadatos'].values()) + \
+            #  sum(len(v) for v in cambios['campos'].values())
+
+    # Resumen final
+    total_metadatos = len(cambios['metadatos'])
+    total_campos = (
+        len(cambios['campos']['añadidos']) +
+        len(cambios['campos']['eliminados']) +
+        len(cambios['campos']['modificados'])
+    )
 
     reporte.append("\n=== RESUMEN ===")
     reporte.append(f"Metadatos modificados: {len(cambios['metadatos'])}")
