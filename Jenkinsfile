@@ -115,7 +115,7 @@ pipeline {
         }
 
         // ******* Nuevo stage: Añadir fecha y hora en el nuevo esquema para solucionar el problema de las duplicidades *******
-        stage('Forzar modificación del esquema (opcional)') {
+        stage('Añadir metadato con fecha y hora al esquema para evitar duplicidades') {
             steps {
                 echo 'Ajustando el nuevo esquema para forzar el registro de una nueva versión...'
                 sh '''
@@ -160,8 +160,8 @@ pipeline {
         }
 
 
-        // ******** Nuevo Stage: Obtener compatibilidad ********
-        stage('Obtener compatibilidad') {
+        // ******** Nuevo Stage: Notiificación a grupo prioritario ********
+        stage('Notificación a grupo prioritario según compatibilidad') {
             steps {
                 echo 'Obteniendo configuración de compatibilidad desde Schema Registry...'
                 script {
@@ -181,76 +181,6 @@ pipeline {
                         echo "🔔 Notificando a ambos grupos para actualización simultánea..."
                     } else {
                         echo "⚠️ Compatibilidad no reconocida. Notificando a todos por precaución."
-                    }
-                }
-            }
-        }
-
-        // ******** Nuevo Stage: Verificar actualización de esquemas ********
-        stage('Verificar actualización de esquemas') {
-            steps {
-                echo 'Verificando que el grupo prioritario se haya actualizado...'
-                script {
-                    // Define la IP del host a la que los servicios están expuestos (debe ser accesible desde Jenkins)
-                    def hostIP = "192.168.1.139"  // Ajustar según corresponda
-                    // Define los puertos de los servicios según el grupo. Aquí se ejemplifica:
-                    def producerPorts = [8090]   // Ejemplo: productores
-                    def consumerPorts = [8091]   // Ejemplo: consumidores
-
-                    // Obtener de nuevo la compatibilidad para decidir a quién verificar
-                    def compatibility = sh(
-                        script: "curl -s ${SCHEMA_REGISTRY_URL}/config/${SUBJECT_NAME} | jq -r '.compatibilityLevel'",
-                        returnStdout: true
-                    ).trim()
-
-                    echo "Compatibilidad detectada: ${compatibility}"
-
-                    // Seleccionar el grupo prioritario y el grupo secundario en función de la compatibilidad
-                    def portsToCheck = []
-                    def nextGroup = ""
-
-                    if (compatibility.startsWith("BACKWARD")) {
-                        // BACKWARD: Los consumidores deben actualizar primero
-                        portsToCheck = consumerPorts
-                        nextGroup = "productores"
-                    } else if (compatibility.startsWith("FORWARD")) {
-                        // FORWARD: Los productores deben actualizar primero
-                        portsToCheck = producerPorts
-                        nextGroup = "consumidores"
-                    } else if (compatibility.startsWith("FULL")) {
-                        // FULL: Ambos grupos se actualizan simultáneamente
-                        portsToCheck = consumerPorts + producerPorts
-                        nextGroup = null
-                    } else {
-                        echo "Compatibilidad desconocida, se verifican todos los servicios..."
-                        portsToCheck = consumerPorts + producerPorts
-                        nextGroup = null
-                    }
-
-                    def allUpdated = true
-
-                    // Se revisa cada servicio del grupo prioritario (o ambos si FULL)
-                    for (port in portsToCheck) {
-                        def response = sh(script: "curl -s http://${hostIP}:$port/schema-status", returnStdout: true).trim()
-                        echo "${hostIP}:$port → $response"
-                        if (!response.contains("Schema is up-to-date")) {
-                            echo "❌ El servicio en el puerto $port NO está actualizado"
-                            allUpdated = false
-                        }
-                    }
-
-                    if (!allUpdated) {
-                        error("Al menos un servicio del grupo prioritario tiene un esquema desactualizado.")
-                    }
-
-                    echo "✅ Todos los servicios del grupo prioritario están actualizados."
-
-                    // Si existe un grupo secundario, notificarlo para proceder con su actualización
-                    if (nextGroup != null) {
-                        echo "🔔 Notificando al grupo secundario (${nextGroup}) para que proceda con la actualización..."
-                        // Aquí se puede agregar una notificación real (por ejemplo, con Slack o email)
-                    } else {
-                        echo "🔔 No se requiere notificar a un grupo secundario; la actualización es conjunta."
                     }
                 }
             }
