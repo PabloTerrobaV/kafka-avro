@@ -117,11 +117,18 @@ def generar_reporte(cambios):
     )
 
     reporte.append("\n=== RESUMEN ===")
-    reporte.append(f"Metadatos modificados: {len(cambios['metadatos'])}")
+    reporte.append(f"Metadatos modificados: {total_metadatos}")
     reporte.append(f"Campos añadidos: {len(cambios['campos']['añadidos'])}")
     reporte.append(f"Campos eliminados: {len(cambios['campos']['eliminados'])}")
     reporte.append(f"Campos modificados: {len(cambios['campos']['modificados'])}")
-    reporte.append(f"Total de cambios: {total}")
+    reporte.append(f"Total de cambios: {total_metadatos + total_campos}")
+
+    # reporte.append("\n=== RESUMEN ===")
+    # reporte.append(f"Metadatos modificados: {len(cambios['metadatos'])}")
+    # reporte.append(f"Campos añadidos: {len(cambios['campos']['añadidos'])}")
+    # reporte.append(f"Campos eliminados: {len(cambios['campos']['eliminados'])}")
+    # reporte.append(f"Campos modificados: {len(cambios['campos']['modificados'])}")
+    # reporte.append(f"Total de cambios: {total}")
 
     return '\n'.join(reporte)
 
