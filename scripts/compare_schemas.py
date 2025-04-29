@@ -71,7 +71,7 @@ def analizar_campo(campo):
         'nombre': campo.name,
         'tipo': str(campo.type),
         'doc': getattr(campo, 'doc', None),
-        'default': campo.get_default(),
+        'default': campo.default if hasattr(campo, 'default') else None,
         'orden': getattr(campo, 'order', None)
     }
 
