@@ -1,12 +1,12 @@
 {
   "type": "record",
-  "name": "OrderPrueba",
-  "namespace": "com",
+  "name": "Order",
+  "namespace": "com.example.kafka",
   "fields": [
     {"name": "id", "type": "string"},
     {"name": "customer_name", "type": "string"},
-    {"name":  "nationality", "type":  "string"},
-    {"name":  "email", "type": "string"},
+    {"name": "nationality", "type":  "string"},
+    {"name": "email", "type": "string"},
     {"name": "total_price", "type": "float"},
     {"name": "product", "type": "string", "default": ""},
     {"name": "is_gift", "type":  "boolean", "default":  false},
