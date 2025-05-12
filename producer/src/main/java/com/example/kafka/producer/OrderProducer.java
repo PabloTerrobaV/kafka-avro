@@ -35,6 +35,7 @@ public class OrderProducer {
     // Configuración de constantes para Kafka y Schema Registry
     private static final String TOPIC = "orders";
     private static final String BOOTSTRAP_SERVERS = "http://localhost:9092";
+    // private static final String BOOTSTRAP_SERVERS = "http://172.18.0.5:9092";
     // private static final String BOOTSTRAP_SERVERS = "http://host.docker.internal:9092";
     // private static final String BOOTSTRAP_SERVERS = "http://kafka:9092";
     private static final String SCHEMA_REGISTRY_URL = "http://localhost:8081";
@@ -151,7 +152,8 @@ public class OrderProducer {
                 // (Integer) fieldValues.get("quantity"),
                 // (Integer) fieldValues.get("discount"),
                 (Boolean) fieldValues.get("is_gift"),
-                (String) fieldValues.get("currency"),
+                // (String) fieldValues.get("currency"),
+                (Boolean) fieldValues.get("is_paid"),
                 (PaymentMethod) fieldValues.get("payment_method"),
                 (OrderStatus) fieldValues.get("order_status")
         );

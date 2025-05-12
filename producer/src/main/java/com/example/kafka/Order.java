@@ -14,10 +14,10 @@ import org.apache.avro.message.SchemaStore;
 
 @org.apache.avro.specific.AvroGenerated
 public class Order extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  private static final long serialVersionUID = -3499051331899654059L;
+  private static final long serialVersionUID = 5818135170190568909L;
 
 
-  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"Order\",\"namespace\":\"com.example.kafka\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"customer_name\",\"type\":\"string\"},{\"name\":\"nationality\",\"type\":\"string\"},{\"name\":\"email\",\"type\":\"string\"},{\"name\":\"total_price\",\"type\":\"float\"},{\"name\":\"product\",\"type\":\"string\",\"default\":\"\"},{\"name\":\"is_gift\",\"type\":\"boolean\",\"default\":false},{\"name\":\"currency\",\"type\":\"string\",\"default\":\"USD\"},{\"name\":\"payment_method\",\"type\":{\"type\":\"enum\",\"name\":\"PaymentMethod\",\"namespace\":\"com.example.kafka.PaymentMethod\",\"symbols\":[\"CREDIT_CARD\",\"PAYPAL\",\"CASH\",\"OTHER\"]}},{\"name\":\"order_status\",\"type\":{\"type\":\"enum\",\"name\":\"OrderStatus\",\"namespace\":\"com.example.kafka.OrderStatus\",\"symbols\":[\"PENDING\",\"SHIPPED\",\"DELIVERED\",\"CANCELLED\"]}}]}");
+  public static final org.apache.avro.Schema SCHEMA$ = new org.apache.avro.Schema.Parser().parse("{\"type\":\"record\",\"name\":\"Order\",\"namespace\":\"com.example.kafka\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"customer_name\",\"type\":\"string\"},{\"name\":\"nationality\",\"type\":\"string\"},{\"name\":\"email\",\"type\":\"string\"},{\"name\":\"total_price\",\"type\":\"float\"},{\"name\":\"product\",\"type\":\"string\",\"default\":\"\"},{\"name\":\"is_gift\",\"type\":\"boolean\",\"default\":false},{\"name\":\"is_paid\",\"type\":\"boolean\",\"default\":false},{\"name\":\"payment_method\",\"type\":{\"type\":\"enum\",\"name\":\"PaymentMethod\",\"namespace\":\"com.example.kafka.PaymentMethod\",\"symbols\":[\"CREDIT_CARD\",\"PAYPAL\",\"CASH\",\"OTHER\"]}},{\"name\":\"order_status\",\"type\":{\"type\":\"enum\",\"name\":\"OrderStatus\",\"namespace\":\"com.example.kafka.OrderStatus\",\"symbols\":[\"PENDING\",\"SHIPPED\",\"DELIVERED\",\"CANCELLED\"]}}]}");
   public static org.apache.avro.Schema getClassSchema() { return SCHEMA$; }
 
   private static final SpecificData MODEL$ = new SpecificData();
@@ -80,7 +80,7 @@ public class Order extends org.apache.avro.specific.SpecificRecordBase implement
   private float total_price;
   private java.lang.CharSequence product;
   private boolean is_gift;
-  private java.lang.CharSequence currency;
+  private boolean is_paid;
   private com.example.kafka.PaymentMethod.PaymentMethod payment_method;
   private com.example.kafka.OrderStatus.OrderStatus order_status;
 
@@ -100,11 +100,11 @@ public class Order extends org.apache.avro.specific.SpecificRecordBase implement
    * @param total_price The new value for total_price
    * @param product The new value for product
    * @param is_gift The new value for is_gift
-   * @param currency The new value for currency
+   * @param is_paid The new value for is_paid
    * @param payment_method The new value for payment_method
    * @param order_status The new value for order_status
    */
-  public Order(java.lang.CharSequence id, java.lang.CharSequence customer_name, java.lang.CharSequence nationality, java.lang.CharSequence email, java.lang.Float total_price, java.lang.CharSequence product, java.lang.Boolean is_gift, java.lang.CharSequence currency, com.example.kafka.PaymentMethod.PaymentMethod payment_method, com.example.kafka.OrderStatus.OrderStatus order_status) {
+  public Order(java.lang.CharSequence id, java.lang.CharSequence customer_name, java.lang.CharSequence nationality, java.lang.CharSequence email, java.lang.Float total_price, java.lang.CharSequence product, java.lang.Boolean is_gift, java.lang.Boolean is_paid, com.example.kafka.PaymentMethod.PaymentMethod payment_method, com.example.kafka.OrderStatus.OrderStatus order_status) {
     this.id = id;
     this.customer_name = customer_name;
     this.nationality = nationality;
@@ -112,7 +112,7 @@ public class Order extends org.apache.avro.specific.SpecificRecordBase implement
     this.total_price = total_price;
     this.product = product;
     this.is_gift = is_gift;
-    this.currency = currency;
+    this.is_paid = is_paid;
     this.payment_method = payment_method;
     this.order_status = order_status;
   }
@@ -134,7 +134,7 @@ public class Order extends org.apache.avro.specific.SpecificRecordBase implement
     case 4: return total_price;
     case 5: return product;
     case 6: return is_gift;
-    case 7: return currency;
+    case 7: return is_paid;
     case 8: return payment_method;
     case 9: return order_status;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
@@ -153,7 +153,7 @@ public class Order extends org.apache.avro.specific.SpecificRecordBase implement
     case 4: total_price = (java.lang.Float)value$; break;
     case 5: product = (java.lang.CharSequence)value$; break;
     case 6: is_gift = (java.lang.Boolean)value$; break;
-    case 7: currency = (java.lang.CharSequence)value$; break;
+    case 7: is_paid = (java.lang.Boolean)value$; break;
     case 8: payment_method = (com.example.kafka.PaymentMethod.PaymentMethod)value$; break;
     case 9: order_status = (com.example.kafka.OrderStatus.OrderStatus)value$; break;
     default: throw new IndexOutOfBoundsException("Invalid index: " + field$);
@@ -280,20 +280,20 @@ public class Order extends org.apache.avro.specific.SpecificRecordBase implement
   }
 
   /**
-   * Gets the value of the 'currency' field.
-   * @return The value of the 'currency' field.
+   * Gets the value of the 'is_paid' field.
+   * @return The value of the 'is_paid' field.
    */
-  public java.lang.CharSequence getCurrency() {
-    return currency;
+  public boolean getIsPaid() {
+    return is_paid;
   }
 
 
   /**
-   * Sets the value of the 'currency' field.
+   * Sets the value of the 'is_paid' field.
    * @param value the value to set.
    */
-  public void setCurrency(java.lang.CharSequence value) {
-    this.currency = value;
+  public void setIsPaid(boolean value) {
+    this.is_paid = value;
   }
 
   /**
@@ -378,7 +378,7 @@ public class Order extends org.apache.avro.specific.SpecificRecordBase implement
     private float total_price;
     private java.lang.CharSequence product;
     private boolean is_gift;
-    private java.lang.CharSequence currency;
+    private boolean is_paid;
     private com.example.kafka.PaymentMethod.PaymentMethod payment_method;
     private com.example.kafka.OrderStatus.OrderStatus order_status;
 
@@ -421,8 +421,8 @@ public class Order extends org.apache.avro.specific.SpecificRecordBase implement
         this.is_gift = data().deepCopy(fields()[6].schema(), other.is_gift);
         fieldSetFlags()[6] = other.fieldSetFlags()[6];
       }
-      if (isValidValue(fields()[7], other.currency)) {
-        this.currency = data().deepCopy(fields()[7].schema(), other.currency);
+      if (isValidValue(fields()[7], other.is_paid)) {
+        this.is_paid = data().deepCopy(fields()[7].schema(), other.is_paid);
         fieldSetFlags()[7] = other.fieldSetFlags()[7];
       }
       if (isValidValue(fields()[8], other.payment_method)) {
@@ -469,8 +469,8 @@ public class Order extends org.apache.avro.specific.SpecificRecordBase implement
         this.is_gift = data().deepCopy(fields()[6].schema(), other.is_gift);
         fieldSetFlags()[6] = true;
       }
-      if (isValidValue(fields()[7], other.currency)) {
-        this.currency = data().deepCopy(fields()[7].schema(), other.currency);
+      if (isValidValue(fields()[7], other.is_paid)) {
+        this.is_paid = data().deepCopy(fields()[7].schema(), other.is_paid);
         fieldSetFlags()[7] = true;
       }
       if (isValidValue(fields()[8], other.payment_method)) {
@@ -762,41 +762,40 @@ public class Order extends org.apache.avro.specific.SpecificRecordBase implement
     }
 
     /**
-      * Gets the value of the 'currency' field.
+      * Gets the value of the 'is_paid' field.
       * @return The value.
       */
-    public java.lang.CharSequence getCurrency() {
-      return currency;
+    public boolean getIsPaid() {
+      return is_paid;
     }
 
 
     /**
-      * Sets the value of the 'currency' field.
-      * @param value The value of 'currency'.
+      * Sets the value of the 'is_paid' field.
+      * @param value The value of 'is_paid'.
       * @return This builder.
       */
-    public com.example.kafka.Order.Builder setCurrency(java.lang.CharSequence value) {
+    public com.example.kafka.Order.Builder setIsPaid(boolean value) {
       validate(fields()[7], value);
-      this.currency = value;
+      this.is_paid = value;
       fieldSetFlags()[7] = true;
       return this;
     }
 
     /**
-      * Checks whether the 'currency' field has been set.
-      * @return True if the 'currency' field has been set, false otherwise.
+      * Checks whether the 'is_paid' field has been set.
+      * @return True if the 'is_paid' field has been set, false otherwise.
       */
-    public boolean hasCurrency() {
+    public boolean hasIsPaid() {
       return fieldSetFlags()[7];
     }
 
 
     /**
-      * Clears the value of the 'currency' field.
+      * Clears the value of the 'is_paid' field.
       * @return This builder.
       */
-    public com.example.kafka.Order.Builder clearCurrency() {
-      currency = null;
+    public com.example.kafka.Order.Builder clearIsPaid() {
       fieldSetFlags()[7] = false;
       return this;
     }
@@ -893,7 +892,7 @@ public class Order extends org.apache.avro.specific.SpecificRecordBase implement
         record.total_price = fieldSetFlags()[4] ? this.total_price : (java.lang.Float) defaultValue(fields()[4]);
         record.product = fieldSetFlags()[5] ? this.product : (java.lang.CharSequence) defaultValue(fields()[5]);
         record.is_gift = fieldSetFlags()[6] ? this.is_gift : (java.lang.Boolean) defaultValue(fields()[6]);
-        record.currency = fieldSetFlags()[7] ? this.currency : (java.lang.CharSequence) defaultValue(fields()[7]);
+        record.is_paid = fieldSetFlags()[7] ? this.is_paid : (java.lang.Boolean) defaultValue(fields()[7]);
         record.payment_method = fieldSetFlags()[8] ? this.payment_method : (com.example.kafka.PaymentMethod.PaymentMethod) defaultValue(fields()[8]);
         record.order_status = fieldSetFlags()[9] ? this.order_status : (com.example.kafka.OrderStatus.OrderStatus) defaultValue(fields()[9]);
         return record;
@@ -942,7 +941,7 @@ public class Order extends org.apache.avro.specific.SpecificRecordBase implement
 
     out.writeBoolean(this.is_gift);
 
-    out.writeString(this.currency);
+    out.writeBoolean(this.is_paid);
 
     out.writeEnum(this.payment_method.ordinal());
 
@@ -969,7 +968,7 @@ public class Order extends org.apache.avro.specific.SpecificRecordBase implement
 
       this.is_gift = in.readBoolean();
 
-      this.currency = in.readString(this.currency instanceof Utf8 ? (Utf8)this.currency : null);
+      this.is_paid = in.readBoolean();
 
       this.payment_method = com.example.kafka.PaymentMethod.PaymentMethod.values()[in.readEnum()];
 
@@ -1007,7 +1006,7 @@ public class Order extends org.apache.avro.specific.SpecificRecordBase implement
           break;
 
         case 7:
-          this.currency = in.readString(this.currency instanceof Utf8 ? (Utf8)this.currency : null);
+          this.is_paid = in.readBoolean();
           break;
 
         case 8:
