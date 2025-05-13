@@ -151,8 +151,8 @@ public class OrderProducer {
                 (String) fieldValues.get("product"),
                 // (Integer) fieldValues.get("quantity"),
                 // (Integer) fieldValues.get("discount"),
+                (String) fieldValues.get("currency"),
                 (Boolean) fieldValues.get("is_gift"),
-                // (String) fieldValues.get("currency"),
                 // (Boolean) fieldValues.get("is_paid"),
                 (PaymentMethod) fieldValues.get("payment_method"),
                 (OrderStatus) fieldValues.get("order_status")
