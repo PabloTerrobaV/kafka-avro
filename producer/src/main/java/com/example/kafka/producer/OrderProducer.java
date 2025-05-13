@@ -153,7 +153,7 @@ public class OrderProducer {
                 // (Integer) fieldValues.get("discount"),
                 (Boolean) fieldValues.get("is_gift"),
                 // (String) fieldValues.get("currency"),
-                (Boolean) fieldValues.get("is_paid"),
+                // (Boolean) fieldValues.get("is_paid"),
                 (PaymentMethod) fieldValues.get("payment_method"),
                 (OrderStatus) fieldValues.get("order_status")
         );
