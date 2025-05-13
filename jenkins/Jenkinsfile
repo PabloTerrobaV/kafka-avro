@@ -185,6 +185,11 @@ pipeline {
                 }
             }
         }
+        stage('Verificar actualización de servicios') {
+            steps {
+                build job: 'Validación de las versiones en productores-consumidores', wait: false
+            }
+        }
     }
 
     post {
