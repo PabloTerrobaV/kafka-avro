@@ -1,11 +1,6 @@
 pipeline {
     agent any
 
-    // Este bloque 'when' hace que el pipeline solo se ejecute si hay cambios en el directorio del esquema
-    when {
-        changeset "common/src/main/avro/**"
-    }
-
     // Definición de variables de entorno, que se usarán en los comandos
     environment {
         // URL del Schema Registry (accesible desde Jenkins en la red de Docker)
@@ -21,6 +16,17 @@ pipeline {
     }
 
     stages {
+        stage('Activar pipeline solo si hay cambios en el esquema') {
+            // Este stage actúa como filtro: solo continúa si hay cambios en el directorio del esquema
+            when {
+                changeset "common/src/main/avro/**"
+            }
+            steps {
+                echo "Se han detectado cambios en 'common/src/main/avro/'. El pipeline continuará."
+            }
+        }
+
+        // Este stage actúa como filtro: solo continúa si hay cambios en el directorio del esquema
         stage('Descargar versión antigua del esquema') {
             steps {
                 echo 'Descargando versión antigua del esquema desde Schema Registry...'
