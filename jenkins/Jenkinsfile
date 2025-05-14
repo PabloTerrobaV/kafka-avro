@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    // Este bloque 'when' hace que el pipeline solo se ejecute si hay cambios en el directorio del esquema
+    when {
+        changeset "common/src/main/avro/**"
+    }
+
     // Definición de variables de entorno, que se usarán en los comandos
     environment {
         // URL del Schema Registry (accesible desde Jenkins en la red de Docker)
@@ -185,6 +190,8 @@ pipeline {
                 }
             }
         }
+
+        // ******** Nuevo stage: Stage de verificación de servicios ********
         stage('Verificar actualización de servicios') {
             steps {
                 build job: 'Validación de las versiones en productores-consumidores', wait: false
