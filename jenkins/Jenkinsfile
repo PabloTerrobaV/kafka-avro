@@ -16,21 +16,25 @@ pipeline {
     }
 
     stages {
+        // Stage padre: filtra la ejecución de todo el pipeline
         stage('Activar pipeline solo si hay cambios en el esquema') {
-            // Este stage actúa como filtro: solo continúa si hay cambios en el directorio del esquema
+            // Este bloque 'when' hace que todo el bloque interno solo se ejecute si hay cambios en el directorio de esquemas Avro
             when {
                 changeset "common/src/main/avro/**"
             }
             steps {
+                // Mensaje informativo en la consola para indicar que el pipeline se activa
                 echo "Se han detectado cambios en 'common/src/main/avro/'. El pipeline continuará."
             }
 
+            // Bloque de stages internos: cada uno representa un paso clave del proceso de gestión de esquemas
             stages {
-                // Este stage actúa como filtro: solo continúa si hay cambios en el directorio del esquema
+
+                // ******** Stage 1: Descarga del esquema antiguo ********
                 stage('Descargar versión antigua del esquema') {
                     steps {
                         echo 'Descargando versión antigua del esquema desde Schema Registry...'
-                        // Se descarga el esquema antiguo utilizando el endpoint /versions/latest (sin /schema) y se extrae el campo "schema" con jq
+                        // Descarga el esquema Avro actualmente registrado en el Schema Registry, para comparar con el nuevo
                         sh """
                         curl -v ${SCHEMA_REGISTRY_URL}/subjects/${SUBJECT_NAME}/versions/latest | jq -r .schema > old_schema.avsc || {
                             echo "Error al descargar el esquema antiguo"
@@ -40,23 +44,25 @@ pipeline {
                     }
                 }
 
+                // ******** Stage 2: Obtener nueva versión del esquema ********
                 stage('Obtener nueva versión del esquema') {
                     steps {
                         echo 'Descargando nueva versión del esquema desde GitHub...'
-                        // Realiza el checkout del repositorio para obtener el archivo actualizado
+                        // Realiza checkout del repositorio para obtener el archivo del esquema actualizado
                         checkout([
                             $class: 'GitSCM',
                             branches: [[name: "${GITHUB_BRANCH}"]],
                             userRemoteConfigs: [[url: "${GITHUB_REPO_URL}"]]
                         ])
-                        // Copia el archivo del esquema actualizado a new_schema.avsc
+                        // Copia el archivo actualizado del esquema a un archivo temporal para su procesamiento
                         sh "cp ${SCHEMA_PATH} new_schema.avsc || { echo 'Error al copiar el nuevo esquema'; exit 1; }"
                     }
                 }
 
+                // ******** Stage 3: Inspección de esquemas ********
                 stage('Inspeccionar esquemas') {
                     steps {
-                        // Verifica que ambos archivos existan y se muestran sus contenidos
+                        // Verifica que ambos archivos (antiguo y nuevo) existan y muestra su contenido por consola
                         sh '''
                         echo "🔍 Verificando existencia y contenido de los archivos AVSC..."
 
@@ -77,10 +83,11 @@ pipeline {
                     }
                 }
 
+                // ******** Stage 4: Comparación de esquemas ********
                 stage('Comparar esquemas y detectar cambios') {
                     steps {
                         echo 'Comparando esquemas y detectando cambios...'
-                        // Se muestra información de depuración: se listan los archivos en "scripts" y se muestra el contenido de ambos esquemas
+                        // Depuración: muestra los archivos disponibles y el contenido de los esquemas antes de la comparación
                         sh '''
                         echo "[DEBUG] Archivos disponibles en scripts/"
                         ls -l scripts
@@ -101,6 +108,7 @@ pipeline {
                         echo "[DEBUG] Contenido de schema_diff.txt:"
                         cat schema_diff.txt
                         '''
+                        // Lee el resultado de la comparación y lo muestra en consola
                         script {
                             def changes = readFile('schema_diff.txt')
                             echo "Cambios detectados:\n${changes}"
@@ -108,14 +116,12 @@ pipeline {
                     }
                 }
 
-                // ******* Stage de validación de compatibilidad de los esquemas, a través de script de Python *******
+                // ******** Stage 5: Validación de compatibilidad ********
                 stage('Validar compatibilidad del esquema') {
                     steps {
                         echo 'Validando compatibilidad del esquema...'
-                        // Se ejecuta el script Python de validación que:
-                        // 1. Consulta la configuración de compatibilidad (usando el Schema Registry).
-                        // 2. Analiza los cambios entre el esquema anterior y el nuevo.
-                        // 3. Valida la compatibilidad y, en caso de incompatibilidad, fuerza la salida con exit code 1.
+                        // Ejecuta un script Python que valida la compatibilidad entre el esquema antiguo y el nuevo,
+                        // según la configuración del Schema Registry. Si no es compatible, el pipeline falla.
                         sh '''
                         python3 scripts/validate_compatibility.py old_schema.avsc new_schema.avsc || {
                             echo "[ERROR] La validación de compatibilidad ha fallado"
@@ -125,10 +131,11 @@ pipeline {
                     }
                 }
 
-                // ******* Nuevo stage: Añadir fecha y hora en el nuevo esquema para solucionar el problema de las duplicidades *******
+                // ******** Stage 6: Añadir metadato de tiempo ********
                 stage('Añadir metadato con fecha y hora al esquema para evitar duplicidades') {
                     steps {
                         echo 'Ajustando el nuevo esquema para forzar el registro de una nueva versión...'
+                        // Añade un campo "doc" con la fecha y hora al esquema para evitar duplicidades en el registro
                         sh '''
                             TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
                             sed -i "s/\\"namespace\\" *: *\\"com.example.kafka\\"/\\"namespace\\": \\"com.example.kafka\\", \\"doc\\": \\"Actualizado el $TIMESTAMP\\"/" new_schema.avsc
@@ -138,9 +145,11 @@ pipeline {
                     }
                 }
 
+                // ******** Stage 7: Registro en Schema Registry ********
                 stage('Registrar esquema en Schema Registry') {
                     steps {
                         echo 'Registrando nuevo esquema en Schema Registry...'
+                        // Convierte el esquema en JSON y lo registra en el Schema Registry usando curl
                         script {
                             def response = sh(
                                 script: '''
@@ -160,30 +169,24 @@ pipeline {
 
                             echo "Respuesta del registro: ${response}"
 
-                            // def newVersion = readJSON text: response
-                            // echo "Esquema registrado (o ya existente) en la versión: ${newVersion.version}"
-
-                            // Si la versión que esperabas es diferente a la que obtuviste, tomar una acción
-                            // Por ejemplo: si esperabas un incremento, pero se mantuvo igual, puedes notificar al equipo.
-                            // O bien, puedes tratarlo como un caso válido que no requiere actualización.
+                            // Aquí podrías procesar la respuesta para validar la versión registrada, si lo necesitas
                         }
                     }
                 }
 
-
-                // ******** Nuevo Stage: Notiificación a grupo prioritario ********
+                // ******** Stage 8: Notificación a grupo prioritario ********
                 stage('Notificación a grupo prioritario según compatibilidad') {
                     steps {
                         echo 'Obteniendo configuración de compatibilidad desde Schema Registry...'
                         script {
-                            // Se consulta el Schema Registry para extraer el nivel de compatibilidad configurado para el subject
+                            // Consulta el nivel de compatibilidad configurado para el subject en el Schema Registry
                             def output = sh(
                                 script: "curl -s ${SCHEMA_REGISTRY_URL}/config/${SUBJECT_NAME} | jq -r '.compatibilityLevel'",
                                 returnStdout: true
                             ).trim()
                             echo "Compatibilidad configurada: ${output}"
 
-                            // Determina a quién notificar como grupo prioritario según el nivel de compatibilidad
+                            // Determina y notifica el grupo prioritario según la compatibilidad
                             if (output.startsWith("BACKWARD")) {
                                 echo "🔔 Notificando a consumidores (prioritarios) para que actualicen primero..."
                             } else if (output.startsWith("FORWARD")) {
@@ -197,15 +200,16 @@ pipeline {
                     }
                 }
 
-                // ******** Nuevo stage: Stage de verificación de servicios ********
+                // ******** Stage 9: Verificación de servicios ********
                 stage('Verificar actualización de servicios') {
                     steps {
+                        // Llama a otro job de Jenkins para verificar si los servicios (productores/consumidores) se han actualizado correctamente
                         build job: 'Validación de las versiones en productores-consumidores', wait: false
                     }
                 }
-            }
-        }
-    }
+            } // Fin del bloque de stages internos
+        } // Fin del stage padre
+    } // Fin del bloque stages global
 
     post {
         success {
