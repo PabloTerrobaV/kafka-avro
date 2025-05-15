@@ -9,6 +9,7 @@
     {"name": "email", "type": "string"},
     {"name": "total_price", "type": "float"},
     {"name": "product", "type": "string", "default": ""},
+    {"name": "discount", "type": "double", "default": 0.0},
     {"name": "is_gift", "type":  "boolean", "default":  false},
     {"name": "payment_method", "type": {"type": "enum", "name": "PaymentMethod", "namespace": "com.example.kafka.PaymentMethod",
     "symbols": ["CREDIT_CARD", "PAYPAL", "CASH", "OTHER"]}},
