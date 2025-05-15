@@ -22,10 +22,10 @@ pipeline {
             when {
                 changeset "common/src/main/avro/**"
             }
-            steps {
+            // steps {
                 // Mensaje informativo en la consola para indicar que el pipeline se activa
-                echo "Se han detectado cambios en 'common/src/main/avro/'. El pipeline continuará."
-            }
+                // echo "Se han detectado cambios en 'common/src/main/avro/'. El pipeline continuará."
+            // }
 
             // Bloque de stages internos: cada uno representa un paso clave del proceso de gestión de esquemas
             stages {
