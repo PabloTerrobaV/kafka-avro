@@ -149,7 +149,7 @@ public class OrderProducer {
                 (String) fieldValues.get("email"),
                 (Float) fieldValues.get("total_price"),
                 (String) fieldValues.get("product"),
-                // (Integer) fieldValues.get("quantity"),
+                (Integer) fieldValues.get("quantity"),
                 // (String) fieldValues.get("currency"),
                 (Double) fieldValues.get("discount"),
                 (Boolean) fieldValues.get("is_gift"),
