@@ -147,7 +147,7 @@ public class OrderProducer {
                 (String) fieldValues.get("customer_name"),
                 (String) fieldValues.get("nationality"),
                 (String) fieldValues.get("email"),
-                (Integer) fieldValues.get("phone"),
+                // (Integer) fieldValues.get("phone"),
                 (Float) fieldValues.get("total_price"),
                 (String) fieldValues.get("product"),
                 (Integer) fieldValues.get("quantity"),
