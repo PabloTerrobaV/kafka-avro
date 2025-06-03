@@ -3,6 +3,175 @@ import sys
 import requests
 from avro.schema import parse
 
+def cargar_esquema(archivo):
+    with open(archivo, 'r') as f:
+        return parse(f.read())
+
+def obtener_compatibilidad(schema_registry_url, subject_name):
+    try:
+        response = requests.get(f"{schema_registry_url}/config/{subject_name}", timeout=10)
+        if response.status_code == 200:
+            return response.json()['compatibilityLevel']
+        response = requests.get(f"{schema_registry_url}/config", timeout=10)
+        if response.status_code == 200:
+            return response.json().get('compatibilityLevel', 'BACKWARD')
+        return 'BACKWARD'
+    except Exception as e:
+        print(f"❌ Error al obtener compatibilidad: {e}")
+        sys.exit(1)
+
+def validar_metadatos(esquema_ant, esquema_nuevo):
+    errores = []
+    advertencias = []
+
+    # Validar 'type'
+    if getattr(esquema_ant, 'type', None) != getattr(esquema_nuevo, 'type', None):
+        errores.append(f"Cambio de 'type' de '{getattr(esquema_ant, 'type', None)}' a '{getattr(esquema_nuevo, 'type', None)}' no es compatible.")
+
+    # Validar 'name'
+    if getattr(esquema_ant, 'name', None) != getattr(esquema_nuevo, 'name', None):
+        errores.append(f"Cambio de 'name' de '{getattr(esquema_ant, 'name', None)}' a '{getattr(esquema_nuevo, 'name', None)}' no es compatible. Usa aliases si es necesario.")
+
+    # Validar 'namespace'
+    if getattr(esquema_ant, 'namespace', None) != getattr(esquema_nuevo, 'namespace', None):
+        advertencias.append(f"Cambio de 'namespace' de '{getattr(esquema_ant, 'namespace', None)}' a '{getattr(esquema_nuevo, 'namespace', None)}'. Puede causar problemas de deserialización en clientes Java. Considera el uso de aliases.")
+
+    return errores, advertencias
+
+def analizar_cambios(esquema_ant, esquema_nuevo):
+    campos_anteriores = {campo.name: campo for campo in esquema_ant.fields}
+    campos_nuevos = {campo.name: campo for campo in esquema_nuevo.fields}
+
+    cambios = {
+        'añadidos_sin_default': [],
+        'eliminados_sin_default': [],
+        'añadidos_con_default': [],
+        'eliminados_con_default': [],
+        'modificados': []
+    }
+
+    for nombre in campos_nuevos:
+        if nombre not in campos_anteriores:
+            campo = campos_nuevos[nombre]
+            if campo.has_default:
+                cambios['añadidos_con_default'].append(nombre)
+            else:
+                cambios['añadidos_sin_default'].append(nombre)
+
+    for nombre in campos_anteriores:
+        if nombre not in campos_nuevos:
+            campo = campos_anteriores[nombre]
+            if campo.has_default:
+                cambios['eliminados_con_default'].append(nombre)
+            else:
+                cambios['eliminados_sin_default'].append(nombre)
+
+    for nombre in campos_anteriores:
+        if nombre in campos_nuevos:
+            ant = campos_anteriores[nombre]
+            nue = campos_nuevos[nombre]
+            if ant != nue:
+                cambios['modificados'].append(nombre)
+
+    return cambios
+
+def validar_compatibilidad(cambios, compatibilidad):
+    errores = []
+    advertencias = []
+
+    if cambios['modificados']:
+        errores.append(f"Modificación de campos existentes no permitida: {cambios['modificados']}")
+
+    if compatibilidad.startswith('BACKWARD'):
+        if cambios['añadidos_sin_default']:
+            errores.append(
+                f"BACKWARD: Campos añadidos sin valor por defecto: {cambios['añadidos_sin_default']}. "
+                "Deben tener 'default' o usar FORWARD compatibility."
+            )
+    if compatibilidad.startswith('FORWARD'):
+        if cambios['eliminados_sin_default']:
+            errores.append(
+                f"FORWARD: Campos eliminados sin valor por defecto: {cambios['eliminados_sin_default']}. "
+                "Deben mantenerse o usar BACKWARD compatibility."
+            )
+    if compatibilidad.startswith('FULL'):
+        if cambios['añadidos_sin_default'] or cambios['eliminados_sin_default']:
+            errores.append(
+                f"FULL: No se permiten cambios incompatibles. "
+                f"Añadidos sin default: {cambios['añadidos_sin_default']}. "
+                f"Eliminados sin default: {cambios['eliminados_sin_default']}."
+            )
+
+    if cambios['añadidos_con_default']:
+        advertencias.append(f"Campos añadidos con valor por defecto: {cambios['añadidos_con_default']}")
+    if cambios['eliminados_con_default']:
+        advertencias.append(f"Campos eliminados con valor por defecto: {cambios['eliminados_con_default']}")
+
+    return errores, advertencias
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print("Uso: python validate_compatibility.py <esquema_anterior.avsc> <esquema_nuevo.avsc>")
+        sys.exit(1)
+
+    try:
+        esquema_ant = cargar_esquema(sys.argv[1])
+        esquema_nuevo = cargar_esquema(sys.argv[2])
+
+        schema_registry_url = "http://schema-registry:8081"
+        subject_name = "orders-value"
+        compatibilidad = obtener_compatibilidad(schema_registry_url, subject_name)
+        print(f"🔍 Modo de compatibilidad: {compatibilidad}")
+
+        # Validación de metadatos iniciales
+        errores_meta, advertencias_meta = validar_metadatos(esquema_ant, esquema_nuevo)
+        if errores_meta:
+            print("\n❌ Errores de metadatos:")
+            for e in errores_meta:
+                print(f" - {e}")
+            sys.exit(1)
+        if advertencias_meta:
+            print("\n⚠️ Advertencias de metadatos:")
+            for a in advertencias_meta:
+                print(f" - {a}")
+
+        # Análisis y validación de campos
+        cambios = analizar_cambios(esquema_ant, esquema_nuevo)
+        print("📊 Cambios detectados:")
+        print(f" - Añadidos sin default: {cambios['añadidos_sin_default']}")
+        print(f" - Eliminados sin default: {cambios['eliminados_sin_default']}")
+        print(f" - Añadidos con default: {cambios['añadidos_con_default']}")
+        print(f" - Eliminados con default: {cambios['eliminados_con_default']}")
+        print(f" - Modificados: {cambios['modificados']}")
+
+        errores, advertencias = validar_compatibilidad(cambios, compatibilidad)
+
+        if advertencias:
+            print("\n⚠️ Advertencias:")
+            for a in advertencias:
+                print(f" - {a}")
+
+        if errores:
+            print("\n❌ Errores de compatibilidad:")
+            for e in errores:
+                print(f" - {e}")
+            sys.exit(1)
+
+        print("\n✅ El esquema es compatible según las reglas configuradas")
+        sys.exit(0)
+
+    except Exception as e:
+        print(f"\n❌ Error crítico: {str(e)}")
+        sys.exit(1)
+
+
+
+"""
+#!/usr/bin/env python3
+import sys
+import requests
+from avro.schema import parse
+
 def validar_metadatos(cambios_metadatos, compatibilidad):
     errores = []
     advertencias = []
@@ -111,6 +280,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"❌ Error crítico: {e}")
         sys.exit(1)
+"""
 
 
 """
